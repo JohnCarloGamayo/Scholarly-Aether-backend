@@ -1,0 +1,71 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    env_file: .env.docker
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+      - strapi
+    volumes:
+      - ./:/app
+      - storage:/app/storage
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    build: .
+    env_file: .env.docker
+    depends_on:
+      - db
+      - redis
+      - strapi
+    volumes:
+      - ./:/app
+      - storage:/app/storage
+    command: python worker.py
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  strapi:
+    image: strapi/strapi:latest
+    env_file: .env.docker
+    environment:
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${STRAPI_DB_NAME}
+      DATABASE_USERNAME: ${STRAPI_DB_USER}
+      DATABASE_PASSWORD: ${STRAPI_DB_PASSWORD}
+      JWT_SECRET: ${STRAPI_JWT_SECRET}
+      APP_KEYS: ${STRAPI_APP_KEYS}
+      API_TOKEN_SALT: ${STRAPI_API_TOKEN_SALT}
+      ADMIN_JWT_SECRET: ${STRAPI_ADMIN_JWT_SECRET}
+    ports:
+      - "1337:1337"
+    volumes:
+      - strapi-data:/srv/app
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  pgdata:
+  storage:
+  strapi-data:

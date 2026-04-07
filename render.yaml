@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: scholarly-aether-backend
+    env: docker
+    dockerContext: .
+    dockerfilePath: ./Dockerfile
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: FIRECRAWL_API_KEY
+        sync: false
+      - key: ACCESS_TOKEN_EXPIRES_MINUTES
+        value: "1440"
+      - key: ALGORITHM
+        value: "HS256"
+      - key: FIRECRAWL_BASE_URL
+        value: "https://api.firecrawl.dev"
+      - key: LLM_BASE_URL
+        value: "https://openrouter.ai/api/v1"
+      - key: LLM_MODEL
+        value: "liquid/lfm-2.5-1.2b-thinking:free"
+      - key: LLM_API_KEY
+        sync: false
+      - key: PDF_OUTPUT_DIR
+        value: "./storage/pdfs"
+      - key: USE_QUEUE
+        value: "false"
+      - key: SMTP_HOST
+        value: "smtp.gmail.com"
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      - key: PASSWORD_RESET_CODE_EXPIRY_MINUTES
+        value: "10"

@@ -74,7 +74,14 @@ def send_reset_code_email(to_email: str, code: str) -> None:
     )
     msg.add_alternative(_build_reset_code_html(code), subtype="html")
 
-    with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=20) as server:
-        server.starttls()
-        server.login(settings.smtp_user, settings.smtp_password)
-        server.send_message(msg)
+    try:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=20) as server:
+            server.starttls()
+            server.login(settings.smtp_user, settings.smtp_password)
+            server.send_message(msg)
+        return
+    except OSError:
+        # Some hosting networks block STARTTLS route on port 587; try implicit SSL on 465.
+        with smtplib.SMTP_SSL(settings.smtp_host, 465, timeout=20) as server:
+            server.login(settings.smtp_user, settings.smtp_password)
+            server.send_message(msg)

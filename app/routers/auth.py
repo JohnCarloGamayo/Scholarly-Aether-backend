@@ -4,6 +4,7 @@ import random
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from .. import schemas, models
 from ..config import get_settings
@@ -15,13 +16,18 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 settings = get_settings()
 
 
+def _normalize_email(value: str) -> str:
+    return value.strip().lower()
+
+
 @router.post("/register", response_model=schemas.UserOut)
 def register_user(payload: schemas.UserCreate, db: Session = Depends(get_db)):
-    existing = db.query(models.User).filter(models.User.email == payload.email).first()
+    email = _normalize_email(payload.email)
+    existing = db.query(models.User).filter(func.lower(models.User.email) == email).first()
     if existing:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
-    user = models.User(email=payload.email, hashed_password=get_password_hash(payload.password))
+    user = models.User(email=email, hashed_password=get_password_hash(payload.password))
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -30,7 +36,8 @@ def register_user(payload: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/token", response_model=schemas.Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.email == form_data.username).first()
+    email = _normalize_email(form_data.username)
+    user = db.query(models.User).filter(func.lower(models.User.email) == email).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password")
 
@@ -45,7 +52,8 @@ def read_users_me(current_user: models.User = Depends(get_current_user)):
 
 @router.post("/forgot-password", response_model=schemas.MessageResponse)
 def forgot_password(payload: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.email == payload.email).first()
+    email = _normalize_email(payload.email)
+    user = db.query(models.User).filter(func.lower(models.User.email) == email).first()
 
     # Always return a generic success message to avoid email enumeration.
     generic_message = schemas.MessageResponse(message="If the email exists, a reset code was sent.")
@@ -78,7 +86,8 @@ def forgot_password(payload: schemas.ForgotPasswordRequest, db: Session = Depend
 
 @router.post("/verify-reset-code", response_model=schemas.MessageResponse)
 def verify_reset_code(payload: schemas.VerifyResetCodeRequest, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.email == payload.email).first()
+    email = _normalize_email(payload.email)
+    user = db.query(models.User).filter(func.lower(models.User.email) == email).first()
     if not user:
         raise HTTPException(status_code=400, detail="Invalid email or code")
 
@@ -97,7 +106,8 @@ def verify_reset_code(payload: schemas.VerifyResetCodeRequest, db: Session = Dep
 
 @router.post("/reset-password", response_model=schemas.MessageResponse)
 def reset_password(payload: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.email == payload.email).first()
+    email = _normalize_email(payload.email)
+    user = db.query(models.User).filter(func.lower(models.User.email) == email).first()
     if not user:
         raise HTTPException(status_code=400, detail="Invalid email or code")
 

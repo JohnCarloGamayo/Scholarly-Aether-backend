@@ -35,6 +35,16 @@ pdf_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/pdfs", StaticFiles(directory=pdf_dir), name="pdfs")
 
 
+@app.get("/")
+def root():
+    return {
+        "service": settings.app_name,
+        "status": "ok",
+        "health": "/health",
+        "docs": "/docs",
+    }
+
+
 @app.get("/health")
 def health_check():
     return {"status": "ok"}

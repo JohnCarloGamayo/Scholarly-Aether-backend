@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import BaseModel, EmailStr, Field
 from enum import Enum
 
@@ -198,6 +198,34 @@ class MessageOut(BaseModel):
 
 class TypingUpdate(BaseModel):
     is_typing: bool
+
+
+class CallStartRequest(BaseModel):
+    call_type: Literal["voice", "video"] = "video"
+
+
+class CallJoinRequest(BaseModel):
+    room_id: str
+
+
+class CallEndRequest(BaseModel):
+    room_id: str
+
+
+class CallSignalCreate(BaseModel):
+    room_id: str
+    from_peer_id: str
+    signal_type: Literal["presence", "offer", "answer", "ice", "leave", "end"]
+    payload: dict
+    to_peer_id: Optional[str] = None
+
+
+class CallJoinResponse(BaseModel):
+    room_id: str
+    join_url: str
+    call_type: Literal["voice", "video"]
+    started_by: EmailStr
+    expires_at: datetime
 
 
 
